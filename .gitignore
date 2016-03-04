@@ -1,0 +1,344 @@
+
+########################    R - ROUTINE FOR 2016 KEY INDICATORS    ###################### 
+
+install.packages("dplyr")
+library(dplyr)
+install.packages("reshape2")
+library(reshape2)
+install.packages("tidyr")
+library(tidyr)
+install.packages("data.table")
+library(data.table)
+install.packages("DataCombine")
+library(DataCombine)
+install.packages("car")
+library(car)
+install.packages("plyr")
+library(plyr)
+
+
+
+## 01. Download of data
+GDP001_LCU_current_2016 <- read.csv("/home/ileeo/Scrivania/R_stuff/KeyIndicators_RacheleBrivio/KeyIndicators_2016/001_GDPcurrent-NCU-countries-3.csv", header=T, na.strings="NA", stringsAsFactors = F)
+GDP002_USD_current_2016 <- read.csv("/home/ileeo/Scrivania/R_stuff/KeyIndicators_RacheleBrivio/KeyIndicators_2016/002_GDPcurrent-USD-countries-2.csv", header=T, na.strings="NA", stringsAsFactors = F)
+GDP003_LCU_constant_2016 <- read.csv("/home/ileeo/Scrivania/R_stuff/KeyIndicators_RacheleBrivio/KeyIndicators_2016/003_GDPconstant-NCU-countries-2.csv", header=T, na.strings="NA", stringsAsFactors = F)
+GDP004_USD_constant_2016 <- read.csv("/home/ileeo/Scrivania/R_stuff/KeyIndicators_RacheleBrivio/KeyIndicators_2016/004_GDPconstant-USD-countries-2.csv", header=T, na.strings="NA", stringsAsFactors = F)
+ExchRatesOnPop005_2016 <- read.csv("/home/ileeo/Scrivania/R_stuff/KeyIndicators_RacheleBrivio/KeyIndicators_2016/012_ExchangeRatesOnPopulation.csv", header=T, na.strings="NA", stringsAsFactors = F)
+GDP_percapita_USD_005_2016 <- read.csv("/home/ileeo/Scrivania/R_stuff/KeyIndicators_RacheleBrivio/KeyIndicators_2016/005_GDPPC-USD-countries-1.csv", header=T, na.strings="NA", stringsAsFactors = F)
+
+
+
+## 02.Changing some indicator name in order to set it according to "FAO Key Indicators dataset"  standards
+GDP001_LCU_current_2016$IndicatorName <- mapvalues(GDP001_LCU_current_2016$IndicatorName, from=c("Gross Domestic Product (GDP)",
+                                                                                                 "Gross capital formation" ,
+                                                                                                 "Agriculture, hunting, forestry, fishing (ISIC A-B)") ,
+                                                   to=c("GDP",
+                                                        "GFCF",
+                                                        "AFF_VA"))
+
+
+GDP003_LCU_constant_2016$IndicatorName <- mapvalues(GDP003_LCU_constant_2016$IndicatorName, from=c("Gross Domestic Product (GDP)",
+                                                                                                   "Gross capital formation" ,
+                                                                                                   "Agriculture, hunting, forestry, fishing (ISIC A-B)") ,
+                                                    to=c("GDP_2005",
+                                                         "GFCF_2005",
+                                                         "AFF_VA2005"))
+
+
+
+GDP002_USD_current_2016$IndicatorName <- mapvalues(GDP002_USD_current_2016$IndicatorName, from=c("Gross Domestic Product (GDP)",
+                                                                                                 "Gross capital formation" ,
+                                                                                                 "Agriculture, hunting, forestry, fishing (ISIC A-B)") ,
+                                                   to=c("GDP_USD",
+                                                        "GFCF_USD",
+                                                        "AFF_VA_USD"))
+
+
+
+
+GDP004_USD_constant_2016$IndicatorName <- mapvalues(GDP004_USD_constant_2016$IndicatorName, from=c("Gross Domestic Product (GDP)",
+                                                                                                   "Gross capital formation" ,
+                                                                                                   "Agriculture, hunting, forestry, fishing (ISIC A-B)") ,
+                                                    to=c("GDP_USD2005",
+                                                         "GFCF_USD2005",
+                                                         "AFF_VA_USD2005"))
+
+
+ExchRatesOnPop005_2016$IndicatorName <- mapvalues(ExchRatesOnPop005_2016$IndicatorName, from="Population",
+                                                  to="Population_thousands")
+
+
+
+GDP_percapita_USD_005_2016$IndicatorName <- mapvalues(GDP_percapita_USD_005_2016$IndicatorName, from="Per Capita GDP at current prices in US Dollars (all countries)", 
+                                                      to="GDP_percap_USD")
+
+
+## 03. Merging all the files - but the one containing the population data - together.
+GDPmerge1 <- merge(GDP001_LCU_current_2016, GDP002_USD_current_2016, all=TRUE) 
+GDPmerge2 <- merge(GDPmerge1, GDP003_LCU_constant_2016, all=TRUE)
+GDPmerge3 <- merge(GDPmerge2, GDP004_USD_constant_2016, all=TRUE)
+
+
+
+## 04. Turning the colnames concerning the years of the remaining files into completely numeric format (e.g. : from X1970 to 1970)
+colnames(GDPmerge3) <- sub("X20","20",colnames(GDPmerge3))
+colnames(GDPmerge3) <- sub("X19","19",colnames(GDPmerge3))
+colnames(ExchRatesOnPop005_2016) <- sub("X20","20",colnames(ExchRatesOnPop005_2016))
+colnames(ExchRatesOnPop005_2016) <- sub("X19","19",colnames(ExchRatesOnPop005_2016))
+
+colnames(GDP_percapita_USD_005_2016) <- sub("X20","20",colnames(GDP_percapita_USD_005_2016))
+colnames(GDP_percapita_USD_005_2016) <- sub("X19","19",colnames(GDP_percapita_USD_005_2016))
+
+
+## 05. Subsetting of the Indicators we are interested in.
+KeyIndicatorsVar01 <-subset(GDPmerge3, IndicatorName == "GDP")
+KeyIndicatorsVar02 <-subset(GDPmerge3, IndicatorName == "GDP_2005")
+KeyIndicatorsVar03 <-subset(GDPmerge3, IndicatorName =="GDP_USD")
+KeyIndicatorsVar04 <-subset(GDPmerge3, IndicatorName == "GDP_USD2005")
+KeyIndicatorsVar05 <-subset(GDPmerge3, IndicatorName == "GFCF")
+KeyIndicatorsVar06 <-subset(GDPmerge3, IndicatorName ==  "GFCF_2005")
+KeyIndicatorsVar07 <-subset(GDPmerge3, IndicatorName == "GFCF_USD")
+KeyIndicatorsVar08 <-subset(GDPmerge3, IndicatorName == "GFCF_USD2005")
+KeyIndicatorsVar09 <-subset(GDPmerge3, IndicatorName == "AFF_VA")
+KeyIndicatorsVar10 <-subset(GDPmerge3, IndicatorName ==  "AFF_VA2005")
+KeyIndicatorsVar11 <-subset(GDPmerge3, IndicatorName == "AFF_VA_USD")
+KeyIndicatorsVar12 <-subset(GDPmerge3, IndicatorName == "AFF_VA_USD2005")
+
+KeyIndVar01 <- merge(KeyIndicatorsVar01, KeyIndicatorsVar02, all=T)
+KeyIndVar02 <- merge(KeyIndicatorsVar03, KeyIndicatorsVar04, all=T)
+KeyIndVar03 <- merge(KeyIndicatorsVar05, KeyIndicatorsVar06, all=T)
+KeyIndVar04 <- merge(KeyIndicatorsVar07, KeyIndicatorsVar08, all=T)
+KeyIndVar05 <- merge(KeyIndicatorsVar09, KeyIndicatorsVar10, all=T)
+KeyIndVar06 <- merge(KeyIndicatorsVar11, KeyIndicatorsVar12, all=T)
+
+KeyIVar01 <- merge(KeyIndVar01, KeyIndVar02, all =T)
+KeyIVar02 <- merge(KeyIndVar03, KeyIndVar04, all =T)
+KeyIVar03 <- merge(KeyIndVar05, KeyIndVar06, all =T)
+
+KIV01 <- merge(KeyIVar01, KeyIVar02, all=T)
+KIVFinal <- merge(KIV01, KeyIVar03, all=T)
+
+KeyIndicatorsVar <- KIVFinal
+
+
+
+
+
+ExchRatesOnPop005_2016Var <- subset(ExchRatesOnPop005_2016, IndicatorName == "Population_thousands")       # In case we want population from the offical data rather than our own calculations.
+
+
+
+
+
+## 06. Shaping data in 'long' format.
+KeyIndicatorsVarLong <- 
+  melt(KeyIndicatorsVar, id.vars=c("Country", "Currency", "IndicatorName"))
+
+ExchRatesOnPop005_2016Var <-
+  melt(ExchRatesOnPop005_2016Var, id.vars=c("Country", "Currency", "IndicatorName"))
+
+GDP_percapita_USD_005_2016Long <-
+  melt(GDP_percapita_USD_005_2016, id.vars=c("Country",  "IndicatorName", "Currency"))
+
+
+
+## 07. Changing some variables' names in order to render them more understandable.
+setnames(KeyIndicatorsVarLong, "variable", "Year")
+setnames(KeyIndicatorsVarLong, "value", "ValueThousands")
+
+setnames(GDP_percapita_USD_005_2016Long, "variable", "Year")
+setnames(GDP_percapita_USD_005_2016Long, "value", "GDP_percap_USD")
+
+
+## 08. Rendering the 'value' variable as numeric (if needed).                        
+bad <- grep("[^0-9\\.]", KeyIndicatorsVarLong$ValueThousands, value=T)
+grep("-?[0-9](\\.[0-9]+)?e[\\+-][0-9]+", bad, value=T, invert=T)
+
+KeyIndicatorsVarLong$ValueThousands <- as.numeric(gsub(",", ".", KeyIndicatorsVarLong$ValueThousands))
+KeyIndicatorsVarLong$ValueThousands <- as.numeric(gsub("-", "+", KeyIndicatorsVarLong$ValueThousands))
+
+
+
+
+## 09. Converting values in Millions.                                                 
+KeyIndicatorsVar.1 <- mutate(KeyIndicatorsVarLong, Value=ValueThousands/1000000) 
+
+
+
+## 10. Deleting the useless variables.
+KeyIndicatorsVarLong$Currency <- NULL
+GDP_percapita_USD_005_2016Long$Currency <- NULL
+
+
+
+## 11. Changing 'ValueThousands' variable name
+setnames(KeyIndicatorsVarLong, "ValueThousands", "Value")
+
+
+
+## 12. Setting data in 'wide' format
+KeyIndicatorsVarWide <- dcast(KeyIndicatorsVarLong, Country + Year ~ IndicatorName,  value.var="Value")
+GDP_percapita_USD_005_2016Wide <- dcast(GDP_percapita_USD_005_2016Long, Country + Year ~ IndicatorName,  value.var="GDP_percap_USD")
+
+
+
+## 13. Merging
+KeyIndicatorsMerge <- merge(KeyIndicatorsVarWide, GDP_percapita_USD_005_2016Wide, all=T)
+
+
+## 13. Adding the calculated variables requested by Key Indicators.
+KeyIndicatorsMerge_NV <- mutate(KeyIndicatorsMerge, 
+                        Def_GDP =GDP/GDP_2005, 
+                        Def_GDP_USD =GDP_USD/GDP_USD2005,
+                        Def_GFCF = GFCF/GFCF_2005,
+                        Def_GFCF_USD =GFCF_USD/GFCF_USD2005,
+                        Def_AFF_VA = AFF_VA/AFF_VA2005,
+                        Def_AFF_VA_USD = AFF_VA_USD/AFF_VA_USD2005,
+                        EX_Rate_USD = GDP/GDP_USD,
+                        INV_Ratio_USD = GFCF_USD/GDP_USD,
+                        INV_Ratio_USD2005 =GFCF_USD2005/GDP_USD2005,
+                        AFF_VA_GDPShare_USD =AFF_VA_USD/GDP_USD,
+                        AFF_VA_GDPShare_USD2005 =AFF_VA_USD2005/GDP_USD2005,
+                        Population_thousands = GDP_USD*1000/GDP_percap_USD,
+                        GDP_percap_USD2005=GDP_USD2005*1000/Population_thousands)
+
+
+
+
+
+## 14. Making a copy of the file compiled so far.
+KeyIndicators2016 <- KeyIndicatorsMerge_NV
+
+
+
+
+
+
+## 15. Changing the COuntry names acording to FAOSTAT standards.
+KeyIndicators2016$Country <-mapvalues(KeyIndicators2016$Country, from=c("Côte d'Ivoire",
+                                                                                "Ethiopia (Former)",
+                                                                                "Former Netherlands Antilles",
+                                                                                "Czechoslovakia (Former)",
+                                                                                "Lao People's DR",
+                                                                                "Micronesia (FS of)",
+                                                                                "TFYR of Macedonia",
+                                                                                "United States",
+                                                                                "U.R. of Tanzania: Mainland",
+                                                                                "USSR (Former)",
+                                                                                "Yemen Arab Republic (Former)",
+                                                                                "Yemen Democratic (Former)",
+                                                                                "Yugoslavia (Former)"),
+                                                                          to=c("Cote d'Ivoire",
+                                                                                "Ethiopia PDR",
+                                                                                "Netherlands Antilles",
+                                                                                "Czechoslovakia",
+                                                                                "Lao People's Democratic Republic",
+                                                                                "Micronesia (Federated States of)",
+                                                                                "The former Yugoslav Republic of Macedonia",
+                                                                                "United States of America",
+                                                                                "United Republic of Tanzania",
+                                                                                "USSR",
+                                                                                "Yemen Ar Rp",
+                                                                                "Yemen Dem",
+                                                                                "Yugoslav SFR"))
+
+
+
+
+
+
+## 16. Deleting the Country names not included in FAOSTAT and the former Countries in order to avoid double-countings.
+KeyIndicators2016.1 <- KeyIndicators2016[!KeyIndicators2016$Country=="United Republic of Tanzania: Zanzibar", ]
+KeyIndicators2016.1 <- KeyIndicators2016.1[!KeyIndicators2016.1$Country=="Yemen: Former Democratic Yemen", ]
+KeyIndicators2016.1 <- KeyIndicators.names.1[!KeyIndicators2016.1$Country=="Yemen: Former Yemen Arab Republic", ]
+
+KeyIndicators2016.1 <- KeyIndicators2016.1[!(KeyIndicators2016.1$Country=="USSR" & KeyIndicators2016.1$Year==1990), ]
+KeyIndicators2016.1 <- KeyIndicators2016.1[!(KeyIndicators2016.1$Country=="Czechoslovakia" & KeyIndicators2016.1$Year==1990), ]
+KeyIndicators2016.1 <- KeyIndicators2016.1[!(KeyIndicators2016.1$Country=="Yugoslav SFR" & KeyIndicators2016.1$Year==1990), ]
+
+KeyIndicators2016.1 <- KeyIndicators2016.1[!(KeyIndicators2016.1$Country=="Ethiopia PDR" & KeyIndicators2016.1$Year==1990), ]
+KeyIndicators2016.1 <- KeyIndicators2016.1[!(KeyIndicators2016.1$Country=="Ethiopia PDR" & KeyIndicators2016.1$Year==1991), ]
+KeyIndicators2016.1 <- KeyIndicators2016.1[!(KeyIndicators2016.1$Country=="Ethiopia PDR" & KeyIndicators2016.1$Year==1992), ]
+KeyIndicators2016.1 <- KeyIndicators2016.1[!(KeyIndicators2016.1$Country=="Ethiopia PDR" & KeyIndicators2016.1$Year==1993), ]
+
+
+
+
+## 17. Importing FAOSTAT codes file and merging it with Key Indicator's Country names
+IND_Flatfile2016 <- read.csv("/home/ileeo/Scrivania/R_stuff/KeyIndicators_RacheleBrivio/IND_Flatfile2015.csv", header=T)
+IND_Flatfile2016_select<- subset(IND_Flatfile2016, select=c("Country", "Year", "FAOCode", "region", "regioncode", "region2", "subregion", "subregioncode", "developing", "LLDC", "LDC", "LIFDC", "NFIDC", "SIDS", "OECD", "EU", "MAFAP", "BRICS", "FAO_member"))
+KeyIndicators_FAOSTAT2016 <- merge(KeyIndicators2016.1, IND_Flatfile2016_select, by=c("Country", "Year"),all.x=TRUE)
+colnames(IND_Flatfile2016_select)[colnames(IND_Flatfile2016_select)=="GDP_percap_USD"] <- "GDP_percap_USD_FAO"
+KeyIndicators_FAOSTAT2016 <- merge(KeyIndicators2016.1, IND_Flatfile2016_select, by=c("Country", "Year"))
+
+
+
+## 18. Adding growth rates for GDP_USD and GDP_USD2005.
+KeyIndicators_FAOSTAT2016_Growth <-transform(KeyIndicators_FAOSTAT2016, GDP_growth_USD=ave(GDP_USD, Country, 
+                                                                                       FUN=function(x) c(NA,exp(diff(log(x)))-1)))
+KeyIndicators_FAOSTAT2016_Growth.a <-transform(KeyIndicators_FAOSTAT2016_Growth, GDP_growth_USD2005=ave(GDP_USD2005, Country, 
+                                                                                                    FUN=function(x) c(NA,exp(diff(log(x)))-1)))
+
+
+
+
+
+## 19. Ordering the variables.
+KeyIndicators_FAOSTAT2016_OrderedVariables <- KeyIndicators_FAOSTAT2016_Growth.a [c(
+  "Country",
+  "Year",
+  "GDP",
+  "GDP_USD",
+  "GDP_USD2005",
+  "GDP_2005",
+  "GDP_growth_USD",
+  "GDP_growth_USD2005",
+  "Population_thousands",
+  "GDP_percap_USD",
+  "GDP_percap_USD2005",
+  "GFCF",
+  "GFCF_2005",
+  "GFCF_USD",
+  "GFCF_USD2005",
+  "AFF_VA",
+  "AFF_VA2005",
+  "AFF_VA_USD",
+  "AFF_VA_USD2005",
+  "INV_Ratio_USD",
+  "INV_Ratio_USD2005",
+  "AFF_VA_GDPShare_USD",
+  "AFF_VA_GDPShare_USD2005",
+  "FAOCode",
+  "region",
+  "regioncode",
+  "region2",
+  "subregion",
+  "subregioncode",
+  "developing",
+  "LLDC",
+  "LDC",
+  "LIFDC",
+  "NFIDC",
+  "SIDS",
+  "OECD",
+  "EU",
+  "MAFAP",                                                                                                                                                                            "Def_GDP",
+  "Def_GDP_USD",
+  "Def_GFCF",
+  "Def_GFCF_USD",
+  "Def_AFF_VA",
+  "Def_AFF_VA_USD",
+  "EX_Rate_USD")]
+
+
+
+
+
+## 20. Ordering the dataset per both Country and Year
+KeyIndicators_FAOSTAT2016_order <- with(KeyIndicators_FAOSTAT2016_OrderedVariables, order(Country, -Year))
+
+KI2016 <- KeyIndicators_FAOSTAT2016_OrderedVariables[KeyIndicators_FAOSTAT2016_order, ]
+
+
+
+View(KI2016)     ############ FINAL FILE ######################
